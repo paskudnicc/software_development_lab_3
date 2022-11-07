@@ -13,32 +13,8 @@ import static java.lang.String.format;
  * @author akirakozov
  */
 public class QueryServlet extends HttpServlet {
-    //    I ABSOLUTELY HATE JAVA
-    static class ResponseWriter {
-        HttpServletResponse response;
-        Statement stmt;
-        ResultSet resultSet;
 
-        public ResponseWriter(HttpServletResponse response, Statement stmt, ResultSet resultSet) {
-            this.response = response;
-            this.stmt = stmt;
-            this.resultSet = resultSet;
-        }
-    }
-
-    private void executeCommand(HttpServletResponse response, String sqlCommand, Function<ResponseWriter, Void> callback) {
-        try (Connection c = DriverManager.getConnection("jdbc:sqlite:test.db")) {
-            Statement stmt = c.createStatement();
-            ResultSet resultSet = stmt.executeQuery(sqlCommand);
-            callback.apply(new ResponseWriter(response, stmt, resultSet));
-            resultSet.close();
-            stmt.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Function<ResponseWriter, Void> generateCallbackForCollector(String header) {
+    private static Function<Utils.ResponseWriter, Void> generateCallbackForCollector(String header) {
         return responseWriter -> {
             try {
                 responseWriter.response.getWriter().println("<html><body>");
@@ -51,7 +27,7 @@ public class QueryServlet extends HttpServlet {
         };
     }
 
-    private Function<ResponseWriter, Void> generateCallbackForIntQuery(String header) {
+    private static Function<Utils.ResponseWriter, Void> generateCallbackForIntQuery(String header) {
         return responseWriter -> {
             try {
                 responseWriter.response.getWriter().println("<html><body>");
@@ -73,16 +49,16 @@ public class QueryServlet extends HttpServlet {
         String command = request.getParameter("command");
 
         if ("max".equals(command)) {
-            executeCommand(response, "SELECT * FROM PRODUCT ORDER BY PRICE DESC LIMIT 1",
+            Utils.executeQuery(response, "SELECT * FROM PRODUCT ORDER BY PRICE DESC LIMIT 1",
                     generateCallbackForCollector("Product with max price: "));
         } else if ("min".equals(command)) {
-            executeCommand(response, "SELECT * FROM PRODUCT ORDER BY PRICE LIMIT 1",
+            Utils.executeQuery(response, "SELECT * FROM PRODUCT ORDER BY PRICE LIMIT 1",
                     generateCallbackForCollector("Product with min price: "));
         } else if ("sum".equals(command)) {
-            executeCommand(response, "SELECT SUM(price) FROM PRODUCT",
+            Utils.executeQuery(response, "SELECT SUM(price) FROM PRODUCT",
                     generateCallbackForIntQuery("Summary price: "));
         } else if ("count".equals(command)) {
-            executeCommand(response, "SELECT COUNT(*) FROM PRODUCT",
+            Utils.executeQuery(response, "SELECT COUNT(*) FROM PRODUCT",
                     generateCallbackForIntQuery("Number of products: "));
         } else {
             response.getWriter().println("Unknown command: " + command);
