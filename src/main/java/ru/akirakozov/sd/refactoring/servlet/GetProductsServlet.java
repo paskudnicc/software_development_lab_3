@@ -20,7 +20,7 @@ public class GetProductsServlet extends HttpServlet {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        
+
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
     }
